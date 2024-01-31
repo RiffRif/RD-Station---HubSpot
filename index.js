@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import axios from "axios";
+import moment from 'moment';
 
+moment().format();
 dotenv.config();
 
 // Variáveis de acesso
@@ -81,6 +83,11 @@ async function verificaContatoHubSpot(email) {
  }
 }
 
+
+async function atualizaContatoHubSpot() {}
+
+async function criaContatoHubSpot() {}
+
 /**
  * Função para agrupar todos os contatos e retornar erro
  * @returns
@@ -133,7 +140,7 @@ async function todosContatosRdStation() {
 
 /**
  * Afere se o contato existe ou não no hubspot.
- * Se existir: Retorna o status 200, adiciona ao array contatosAtualizar.
+ * Se existir: Retorna o status 200, adiciona ao array contatosAtualizar os contatos em que a data da ultima atualização do RD Station é maior que a do HubSpot.
  * Se não existir: Retorna o status 404, é adicionada a variavel contatosCriar para criar o contato no HubSpot.
  * @returns
  */
@@ -162,18 +169,32 @@ async function afereContatoNoHubSpot() {
    if (status === 404) {
     contatosCriar.push(retornoContato);
    } else if (status === 200) {
-    retornoContato.ultima_atualizacao = contato.updated_at;
+    const dataAtualizacaoHub = converteDataISO(contatoHubspot.data.updatedAt);
+    const dataAtualizacaoSd = converteDataISO(contato.updated_at);
 
-    contatosAtualizar.push(retornoContato);
+    const atualizaContato = moment(dataAtualizacaoSd).isAfter(dataAtualizacaoHub);
+
+    console.log(contatoHubspot.data.updatedAt, contato.updated_at);
+   
+    console.log(atualizaContato)
+    if(atualizaContato) {        
+        contatosAtualizar.push(retornoContato);
+    }
    }
   }
  } else {
   return contatosRdStation;
  }
+
+ console.log(contatosCriar, contatosAtualizar);
 }
 
-async function atualizaContatoHubSpot() {}
+function converteDataISO(dataString) {
+    return moment.utc(dataString).toDate()
+}
 
-async function criaContatoHubSpot() {}
 
 afereContatoNoHubSpot();
+// const teste = await verificaContatoHubSpot("bh@hubspot.com");
+
+// console.log(teste);
