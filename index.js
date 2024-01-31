@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import axios from "axios";
-import moment from 'moment';
+import moment from "moment";
 
 moment().format();
 dotenv.config();
@@ -83,10 +83,90 @@ async function verificaContatoHubSpot(email) {
  }
 }
 
+/**
+ * Atualiza as propriedades dos contatos em Lote, necessário enviar um array de objetos com as propriedades dos contatos.
+ * @param {Array} contatos
+ * @returns
+ */
+async function atualizaContatoHubSpot(contatos) {
+ try {
+  const options = {
+   method: "POST",
+   url: `${urlHubSpot}/crm/v3/objects/contacts/batch/update`,
+   headers: {
+    Authorization: `Bearer ${tokenHubSpot}`,
+    "Content-Type": "application/json",
+   },
+   data: {
+    inputs: contatos,
+   },
+  };
 
-async function atualizaContatoHubSpot() {}
+  const retorno = await axios.request(options);
+  const proprieades = retorno.data;
 
-async function criaContatoHubSpot() {}
+  console.log(proprieades);
+
+  const objRetorno = {
+   status_code: retorno.status,
+   data: retorno.data.results,
+  };
+
+  return objRetorno;
+ } catch (error) {
+  const statusErro = error.response.status;
+  const textoErro = error.response.statusText;
+
+  const objErro = {
+   status_code: statusErro,
+   texto_erro: textoErro,
+   erro: statusErro + " - " + textoErro,
+  };
+
+  return objErro;
+ }
+}
+
+/**
+ * Cria contato em Lote, necessário enviar um array de objetos com as propriedades dos contatos.
+ * @param {Array} contatos
+ * @returns
+ */
+async function criaContatoHubSpot(contatos) {
+ try {
+  const options = {
+   method: "POST",
+   url: `${urlHubSpot}/crm/v3/objects/contacts/batch/create`,
+   headers: {
+    Authorization: `Bearer ${tokenHubSpot}`,
+    "Content-Type": "application/json",
+   },
+   data: {
+    inputs: contatos,
+   },
+  };
+
+  const retorno = await axios.request(options);
+
+  const objRetorno = {
+   status_code: retorno.status,
+   data: retorno.data,
+  };
+
+  return objRetorno;
+ } catch (error) {
+  const statusErro = error.response.status;
+  const textoErro = error.response.statusText;
+
+  const objErro = {
+   status_code: statusErro,
+   texto_erro: textoErro,
+   erro: statusErro + " - " + textoErro,
+  };
+
+  return objErro;
+ }
+}
 
 /**
  * Função para agrupar todos os contatos e retornar erro
@@ -148,6 +228,9 @@ async function afereContatoNoHubSpot() {
  const contatosRdStation = await todosContatosRdStation();
  const contatosCriar = [];
  const contatosAtualizar = [];
+ const erroVerificaHubSpot = [];
+ let retornoContatosAtualizar;
+ let retornoContatosCriados;
 
  if (contatosRdStation.mensagem === "Sucesso!") {
   const quantidadeContatos = contatosRdStation.data.length;
@@ -158,12 +241,15 @@ async function afereContatoNoHubSpot() {
 
    const contatoHubspot = await verificaContatoHubSpot(emailContato);
    const status = contatoHubspot.status_code;
+   const nomeSeparado = separaNomeSobrenome(contato.name);
 
    const retornoContato = {
-    status_code: status,
-    nome: contato.name,
-    email: emailContato,
-    telefone: contato.phones[0].phone,
+    properties: {
+     firstname: nomeSeparado[0],
+     lastname: nomeSeparado[1],
+     email: emailContato,
+     phone: contato.phones[0].phone,
+    },
    };
 
    if (status === 404) {
@@ -174,27 +260,65 @@ async function afereContatoNoHubSpot() {
 
     const atualizaContato = moment(dataAtualizacaoSd).isAfter(dataAtualizacaoHub);
 
-    console.log(contatoHubspot.data.updatedAt, contato.updated_at);
-   
-    console.log(atualizaContato)
-    if(atualizaContato) {        
-        contatosAtualizar.push(retornoContato);
+    if (atualizaContato) {
+     retornoContato.id = contatoHubspot.data.id;
+
+     contatosAtualizar.push(retornoContato);
     }
+   } else {
+    erroVerificaHubSpot.push(contatoHubspot);
    }
   }
+
+  if (erroVerificaHubSpot.length > 0) {
+   console.log(erroVerificaHubSpot);
+   //    return erroVerificaHubSpot;
+  } else {
+   if (contatosCriar.length > 0) {
+    retornoContatosCriados = await criaContatoHubSpot(contatosCriar);
+   } else {
+    retornoContatosCriados = "Não existe novos contatos a serem criados!";
+   }
+
+   if (contatosAtualizar.length > 0) {
+    retornoContatosAtualizar = await atualizaContatoHubSpot(contatosAtualizar);
+   } else {
+    retornoContatosAtualizar = "Não existe contatos para atualizar!";
+   }
+
+   const retorno = {
+    retornoContatosAtualizar,
+    retornoContatosCriados,
+   };
+   console.log(retorno);
+   //  return retorno;
+  }
  } else {
-  return contatosRdStation;
+  console.log(contatosRdStation);
+  //   return contatosRdStation;
  }
-
- console.log(contatosCriar, contatosAtualizar);
 }
 
+/**
+ * Converte a data para o padrão ISO/UTC
+ * @param {Date} dataString
+ * @returns
+ */
 function converteDataISO(dataString) {
-    return moment.utc(dataString).toDate()
+ return moment.utc(dataString).toDate();
 }
 
+/**
+ * Separa o primeiro nome do restante, retornando um array, onde a posição [0] é o nome e a [1] os sobrenomes
+ * @param {string} nomeCompleto
+ * @returns
+ */
+function separaNomeSobrenome(nomeCompleto) {
+ let nomeSeparado = nomeCompleto.split(" ");
+ let sobrenome = nomeSeparado.slice(1, nomeSeparado.length).join(" ");
+ let nome = nomeSeparado[0];
+
+ return [nome, sobrenome];
+}
 
 afereContatoNoHubSpot();
-// const teste = await verificaContatoHubSpot("bh@hubspot.com");
-
-// console.log(teste);
