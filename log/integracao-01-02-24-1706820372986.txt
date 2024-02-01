@@ -1,0 +1,15 @@
+Integração finalizada: 01/02/2024 17:02.
+{
+  "retornoContatosAtualizar": "Não existe contatos para atualizar!",
+  "retornoContatosCriados": "Não existe novos contatos a serem criados!",
+  "retornoErros": [
+    {
+      "properties": {
+        "firstname": "Teste",
+        "lastname": "Sem Email",
+        "email": "Contato sem e-mail!",
+        "phone": "1188885454"
+      }
+    }
+  ]
+}

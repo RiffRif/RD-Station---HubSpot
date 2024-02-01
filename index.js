@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import axios from "axios";
 import moment from "moment";
+import fs from "node:fs";
+import { exec } from "child_process";
 
 moment().format();
 dotenv.config();
@@ -103,9 +105,6 @@ async function atualizaContatoHubSpot(contatos) {
   };
 
   const retorno = await axios.request(options);
-  const proprieades = retorno.data;
-
-  console.log(proprieades);
 
   const objRetorno = {
    status_code: retorno.status,
@@ -231,24 +230,39 @@ async function afereContatoNoHubSpot() {
  const erroVerificaHubSpot = [];
  let retornoContatosAtualizar;
  let retornoContatosCriados;
+ let retornoErros;
 
  if (contatosRdStation.mensagem === "Sucesso!") {
   const quantidadeContatos = contatosRdStation.data.length;
 
   for (let i = 0; i < quantidadeContatos; i++) {
    const contato = contatosRdStation.data[i];
-   const emailContato = contato.emails[0].email;
+   let emailContato = "Contato sem e-mail!";
+   let status = "";
+   let contatoHubspot;
+   let telefone = "";
 
-   const contatoHubspot = await verificaContatoHubSpot(emailContato);
-   const status = contatoHubspot.status_code;
+   if (contato.emails.length > 0) {
+    emailContato = contato.emails[0].email;
+
+    contatoHubspot = await verificaContatoHubSpot(emailContato);
+    status = contatoHubspot.status_code;
+   }
+
    const nomeSeparado = separaNomeSobrenome(contato.name);
+
+   if (contato.phones.length > 0) {
+    telefone = contato.phones[0].phone;
+   } else if (status === "") {
+    telefone = "Contato sem telefone!";
+   }
 
    const retornoContato = {
     properties: {
      firstname: nomeSeparado[0],
      lastname: nomeSeparado[1],
      email: emailContato,
-     phone: contato.phones[0].phone,
+     phone: telefone,
     },
    };
 
@@ -266,36 +280,37 @@ async function afereContatoNoHubSpot() {
      contatosAtualizar.push(retornoContato);
     }
    } else {
-    erroVerificaHubSpot.push(contatoHubspot);
+    erroVerificaHubSpot.push(retornoContato);
    }
   }
 
   if (erroVerificaHubSpot.length > 0) {
-   console.log(erroVerificaHubSpot);
-   //    return erroVerificaHubSpot;
+   retornoErros = erroVerificaHubSpot;
   } else {
-   if (contatosCriar.length > 0) {
-    retornoContatosCriados = await criaContatoHubSpot(contatosCriar);
-   } else {
-    retornoContatosCriados = "Não existe novos contatos a serem criados!";
-   }
-
-   if (contatosAtualizar.length > 0) {
-    retornoContatosAtualizar = await atualizaContatoHubSpot(contatosAtualizar);
-   } else {
-    retornoContatosAtualizar = "Não existe contatos para atualizar!";
-   }
-
-   const retorno = {
-    retornoContatosAtualizar,
-    retornoContatosCriados,
-   };
-   console.log(retorno);
-   //  return retorno;
+   retornoErros = "Não houve erros ao Atualizar e/ou Criar novos contatos no HubSpot!";
   }
+
+  if (contatosCriar.length > 0) {
+   retornoContatosCriados = await criaContatoHubSpot(contatosCriar);
+  } else {
+   retornoContatosCriados = "Não existe novos contatos a serem criados!";
+  }
+
+  if (contatosAtualizar.length > 0) {
+   retornoContatosAtualizar = await atualizaContatoHubSpot(contatosAtualizar);
+  } else {
+   retornoContatosAtualizar = "Não existe contatos para atualizar!";
+  }
+
+  const retorno = {
+   retornoContatosAtualizar,
+   retornoContatosCriados,
+   retornoErros,
+  };
+
+  criaArquivoLog(retorno);
  } else {
-  console.log(contatosRdStation);
-  //   return contatosRdStation;
+  criaArquivoLog(contatosRdStation);
  }
 }
 
@@ -319,6 +334,27 @@ function separaNomeSobrenome(nomeCompleto) {
  let nome = nomeSeparado[0];
 
  return [nome, sobrenome];
+}
+
+/**
+ * Cria um arquivo TXT de log e abre para o usuario em seguida, ficando salvo na pasta /log.
+ * @param {*} conteudo
+ */
+function criaArquivoLog(conteudo) {
+ conteudo = JSON.stringify(conteudo, null, 2);
+ const dataAtual = moment().format("DD/MM/YYYY HH:MM");
+ const mensagemFinal = `Integração finalizada: ${dataAtual}.\n${conteudo}`;
+
+ const nomeArquivo = `integracao-${moment().format("DD-MM-YY")}-${Date.now()}`;
+ const arquivo = `log/${nomeArquivo}.txt`;
+
+ fs.writeFile(arquivo, mensagemFinal, (err) => {
+  if (err) {
+   console.error(err);
+  } else {
+   exec(`start ${arquivo}`);
+  }
+ });
 }
 
 afereContatoNoHubSpot();
