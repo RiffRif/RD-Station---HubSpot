@@ -53,3 +53,15 @@ Rode o projeto:
 
   node index.js
 ```
+
+
+## Como funciona:
+
+- Lista todos os contatos do RD-Station;
+- Verifica contato por contato quais já estão criados ou não no HubSpot;
+- Separa os contatos em dois grupos: contatos a criar e contatos a atualizar;
+- Atualiza e cria os contatos em lote;
+- Devolve um arquivo txt com o log de criação, atualização e erros;
+
+A verificação dos contatos no HubSpot já evita a criação de duplicidades.
+Caso o contato já esteja no HubSpot é comparada com a data de atualização do RD-Station, caso a data do RD-Station seja maior que a do HubSpot o contato é atualizado.
