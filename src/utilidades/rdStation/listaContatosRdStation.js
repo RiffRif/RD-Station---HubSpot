@@ -15,28 +15,38 @@ const urlRdStation = "https://crm.rdstation.com/api";
  * @returns
  */
 export async function listaContatosRdStation(pagina) {
-    try {
-     const retorno = await axios.get(`${urlRdStation}/v1/contacts`, { params: { token: tokenRdStation, page: pagina, limit: "200" } });
-   
-     const statusCode = retorno.status;
-   
-     const objRetorno = {
-      status_code: statusCode,
-      data: retorno.data,
-     };
-   
-     return objRetorno;
-    } catch (error) {
-     const statusErro = error.response.status;
-     const textoErro = error.response.data.error;
-   
-     const objErro = {
-      page: pagina,
-      status_code: statusErro,
-      texto_erro: textoErro,
-      erro: statusErro + " - " + textoErro,
-     };
-   
-     return objErro;
-    }
-   }
+ if (tokenRdStation) {
+  try {
+   const retorno = await axios.get(`${urlRdStation}/v1/contacts`, { params: { token: tokenRdStation, page: pagina, limit: "200" } });
+
+   const statusCode = retorno.status;
+
+   const objRetorno = {
+    status_code: statusCode,
+    data: retorno.data,
+   };
+
+   return objRetorno;
+  } catch (error) {
+   const statusErro = error.response.status;
+   const textoErro = error.response.data.error;
+
+   const objErro = {
+    page: pagina,
+    status_code: statusErro,
+    texto_erro: textoErro,
+    erro: statusErro + " - " + textoErro,
+   };
+
+   return objErro;
+  }
+ } else {
+  const objErro = {
+   status_code: 401,
+   texto_erro: "Sem token de acesso, inclua no arquivo .env!",
+   erro: "401 - Sem token de acesso, inclua no arquivo .env!",
+  };
+
+  return objErro;
+ }
+}

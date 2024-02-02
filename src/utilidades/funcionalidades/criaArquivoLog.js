@@ -9,18 +9,18 @@ moment().format();
  * @param {*} conteudo
  */
 export function criaArquivoLog(conteudo) {
-    conteudo = JSON.stringify(conteudo, null, 2);
-    const dataAtual = moment().format("DD/MM/YYYY HH:MM");
-    const mensagemFinal = `Integração finalizada: ${dataAtual}.\n${conteudo}`;
-   
-    const nomeArquivo = `integracao-${moment().format("DD-MM-YY")}-${Date.now()}`;
-    const arquivo = `log/${nomeArquivo}.txt`;
-   
-    fs.writeFile(arquivo, mensagemFinal, (err) => {
-     if (err) {
-      console.error(err);
-     } else {
-      exec(`start ${arquivo}`);
-     }
-    });
-   }
+ conteudo = JSON.stringify(conteudo, null, 2);
+ const dataAtual = moment().format("DD/MM/YYYY HH:MM");
+ const mensagemFinal = `Integração finalizada: ${dataAtual}.\n${conteudo}`;
+
+ const nomeArquivo = `integracao-${moment().format("DD-MM-YY")}-${Date.now()}`;
+ const arquivo = `log/${nomeArquivo}.txt`;
+
+ fs.writeFile(arquivo, mensagemFinal, (err) => {
+  if (err) {
+   console.error(err);
+  } else {
+   exec(`start ${arquivo}`);
+  }
+ });
+}
