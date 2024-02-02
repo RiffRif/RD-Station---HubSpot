@@ -46,6 +46,7 @@ Instale as dependências:
 ```bash
   npm install
 ```
+Esse projeto usa a versão do node v20.11.0
 Rode o projeto:
 
 ```bash
