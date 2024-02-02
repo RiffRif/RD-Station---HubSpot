@@ -47,6 +47,7 @@ Instale as dependências:
   npm install
 ```
 Esse projeto usa a versão do node v20.11.0
+
 Rode o projeto:
 
 ```bash
@@ -65,4 +66,5 @@ Rode o projeto:
 - Devolve um arquivo txt com o log de criação, atualização e erros;
 
 A verificação dos contatos no HubSpot já evita a criação de duplicidades.
+
 Caso o contato já esteja no HubSpot é comparada com a data de atualização do RD-Station, caso a data do RD-Station seja maior que a do HubSpot o contato é atualizado.
